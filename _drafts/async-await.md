@@ -24,7 +24,7 @@ far too long now and may forget some.
 To provide a slightly more realistic example I will use the following "trait"
 for reading in data:
 
-TODO: async-read.rs
+{% include code.md code="async-read.rs" %}
 
 This can't be a real trait because it requires generic associated types to
 declare the return value of `read_to_end`, so wherever you see `AsyncRead` in
