@@ -3,14 +3,24 @@
   (TODO: Position this link nicely)
 </a>
 
-```rust
+{% capture snippet %}
 {% include_relative _async-await/snippets/{{include.code}} %}
+{% endcapture %}
+
+{% capture playground %}
+{% include_relative _async-await/playgrounds/{{include.code}} %}
+{% endcapture %}
+
+```rust
+{{snippet | lstrip | rstrip}}
 ```
 
-<script type="text/rust">{% include_relative _async-await/playgrounds/{{include.code}} %}</script>
+<script type="text/rust">{{playground | lstrip | rstrip}}</script>
 <script type="text/javascript">
-let me = document.currentScript
-let playground = me.previousElementSibling
-let link = playground.previousElementSibling.previousElementSibling.children[0]
-link.href = `https://play.rust-lang.org/?version=nightly&edition=2018&code=${encodeURIComponent(playground.text)}`
+(() => {
+  let me = document.currentScript
+  let playground = me.previousElementSibling
+  let link = playground.previousElementSibling.previousElementSibling.children[0]
+  link.href = `https://play.rust-lang.org/?version=nightly&edition=2018&code=${encodeURIComponent(playground.text)}`
+})()
 </script>

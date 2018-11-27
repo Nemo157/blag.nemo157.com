@@ -12,12 +12,23 @@ First, to provide a nice self-contained example I need to get some setup out of
 the way. In normal async/await in Rust you will bring in the [`futures`][]
 library to handle most of the pieces I'm about to mention; but to be able to
 provide links to running playgrounds of these examples (and so that you can see
-all the gristle in these here sausages) I'm going to avoid that. 
+all the gristle in these here sausages) I'm going to avoid that.
 
 Also, I'm going to assume complete knowledge of soon to be stable Rust 2018 and
 the basic futures API (including pinning). I will endeavour to explain all the
 other nightly features being used, but I have been living in nightly-only for
 far too long now and may forget some.
+
+[`futures`]: https://github.com/rust-lang-nursery/futures-rs
+
+### Nightly Features
+
+There are only three nightly features needed for the basic setup here, these are
+what I'm assuming complete knowledge of:
+
+ * `async_await` to allow using async functions and blocks
+ * `futures_api` to allow using the basic `core::future` and `core::task` APIs
+ * `pin` to allow using the basic `core::pin` APIs
 
 ### The "Async IO"
 
@@ -37,19 +48,30 @@ implement to handle the different execution paths.
 
 ### The "Executor"
 
-To run a `Future` to completion you require an executor to run it on. This is
-the simplest ever executor that simply spins on a single future until it
-completes:
+To run a `Future` to completion you require an executor to run it on. First
+there is the most basic API for an executor that can run a single future to
+completion:
 
-TODO: no-block.rs
+```rust
+pub fn block_on<F: Future>(mut future: F) -> F::Output;
+```
+
+Then, this is the simplest implementation of that executor that simply spins
+polling the future until it completes (there is an equivalent executor that
+requires less lines of code, and no unsafety, but it does require use of
+`std::sync::Arc` and I'm attempting to use the least powerful implementation of
+everything here):
+
+{% include code.md code="executor.rs" %}
 
 ## The `async`/`await!` implementation
 
-Now, here's the super simple `async fn` we're going to be expanding. This
-function takes in a reference to some async IO, constructs a handle to some
-"random" one-time-pad, waits for both to complete, then XORs the data and pad
-together to secure the data. It may seem simple here, but once we get to the
-final stage you're going to be glad I chose something so simple.
+Now that we have the setup out of the way, here's the super simple `async fn`
+we're going to be expanding. This function takes in a reference to some async
+IO, constructs a handle to some "random" one-time-pad, waits for both to
+complete, then XORs the data and pad together to secure the data. It may seem
+simple here, but once we get to the final stage you're going to be glad I chose
+something so simple.
 
 TODO: async-example.rs
 
