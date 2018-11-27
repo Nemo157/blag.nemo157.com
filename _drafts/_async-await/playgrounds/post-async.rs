@@ -53,14 +53,12 @@ pub mod executor {
 }
 
 use self::io::AsyncRead;
-use std::future::poll_with_tls_waker;
-use core::{
-    pin::Pin,
-    task::Poll,
-    future::Future,
-};
+use core::future::Future;
 
 pub fn quote_encrypt_unquote(data: &mut AsyncRead) -> impl Future<Output = Vec<u8>> + '_ {
+    use std::future::poll_with_tls_waker;
+    use core::{pin::Pin, task::Poll};
+
     async move {
         let mut pad = AsyncRead::new(vec![4; 32]); // chosen by fair dice roll
         let data = {

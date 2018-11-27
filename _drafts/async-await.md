@@ -73,7 +73,7 @@ complete, then XORs the data and pad together to secure the data. It may seem
 simple here, but once we get to the final stage you're going to be glad I chose
 something so simple.
 
-TODO: async-example.rs
+{% include code.md code="async.rs" %}
 
 ## Expanding `async`/`await!`
 
@@ -92,7 +92,7 @@ by pulling out a few temporary variables the control flow between the different
 transforms will be easier to follow. Mostly, having `await!` inside other
 expressions will greatly complicate the upcoming generator transform.
 
-TODO: async-example-2.rs
+{% include code.md code="async-split.rs" %}
 
 ### Expanding the `await!` macro
 
@@ -105,7 +105,7 @@ here for now. We can expand this macro while still leaving the rest of the
 
 [std::await]: https://doc.rust-lang.org/nightly/std/macro.await.html
 
-TODO: async-example-3.rs
+{% include code.md code="post-await.rs" %}
 
 ### Rewriting the function signature
 
@@ -121,7 +121,7 @@ After re-writing the signature the body of the function can be wrapped in
 an `async move { ... }` block to keep everything compiling with the exact same
 semantics as before:
 
-TODO: async-example-4.rs
+{% include code.md code="post-async.rs" %}
 
 ### Expanding the body
 
@@ -135,4 +135,4 @@ by `from_generator` will place the `&LocalWaker` passed in to `Future::poll`
 into thread local storage, `poll_with_tls_waker` will then retrieve this to pass
 in to sub-futures that are being `await!`ed on. 
 
-TODO: async-example-5.rs
+{% include code.md code="generator.rs" %}

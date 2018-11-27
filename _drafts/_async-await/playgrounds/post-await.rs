@@ -53,34 +53,29 @@ pub mod executor {
 }
 
 use self::io::AsyncRead;
-use std::future::{poll_with_tls_waker, from_generator};
-use core::{
-    pin::Pin,
-    task::Poll,
-    future::Future,
-};
 
-pub fn quote_encrypt_unquote(data: &mut AsyncRead) -> impl Future<Output = Vec<u8>> + '_ {
-    from_generator(static move || {
-        let mut pad = AsyncRead::new(vec![4; 32]); // chosen by fair dice roll
-        let data = {
-            let mut pinned = data.read_to_end();
-            loop {
-                if let Poll::Ready(x) = poll_with_tls_waker(unsafe { Pin::new_unchecked(&mut pinned) }) {
-                    break x;
-                }
-                yield
+pub async fn quote_encrypt_unquote(data: &mut AsyncRead) -> Vec<u8> {
+    use std::future::poll_with_tls_waker;
+    use core::{pin::Pin, task::Poll};
+
+    let mut pad = AsyncRead::new(vec![4; 32]); // chosen by fair dice roll
+    let data = {
+        let mut pinned = data.read_to_end();
+        loop {
+            if let Poll::Ready(x) = poll_with_tls_waker(unsafe { Pin::new_unchecked(&mut pinned) }) {
+                break x;
             }
-        };
-        let pad = {
-            let mut pinned = pad.read_to_end();
-            loop {
-                if let Poll::Ready(x) = poll_with_tls_waker(unsafe { Pin::new_unchecked(&mut pinned) }) {
-                    break x;
-                }
-                yield
+            yield
+        }
+    };
+    let pad = {
+        let mut pinned = pad.read_to_end();
+        loop {
+            if let Poll::Ready(x) = poll_with_tls_waker(unsafe { Pin::new_unchecked(&mut pinned) }) {
+                break x;
             }
-        };
-        data.into_iter().zip(pad).map(|(a, b)| a ^ b).collect()
-    })
+            yield
+        }
+    };
+    data.into_iter().zip(pad).map(|(a, b)| a ^ b).collect()
 }
