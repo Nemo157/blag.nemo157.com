@@ -1,0 +1,21 @@
+---
+layout: default
+---
+
+<dl>
+  {%- for post in site.posts -%}
+  <dd>
+    <dt>
+      <h2>
+        <small class="u-pull-right">[{{ post.date | date: "%Y-%m-%d" }}]</small>
+        <a class="post-link" href="{{ post.url | relative_url }}">
+          {{ post.title | escape }}
+        </a>
+      </h2>
+    </dt>
+    <dd>
+      {{ post.excerpt }}
+    </dd>
+  </dd>
+  {%- endfor -%}
+</dl>

@@ -1,0 +1,107 @@
+@import solarized
+
+.light
+  #switcher a
+    background: $base2
+    color: $base01
+    border-color: $base00
+  &.support-hover
+    #switcher #invert:hover
+      background: $base03
+      color: $base1
+
+.dark
+  #switcher a
+    background: $base02
+    color: $base1
+    border-color: $base0
+  &.support-hover
+    #switcher #invert:hover
+      background: $base3
+      color: $base01
+
+.support-hover #switcher
+  #plus, #minus
+    &:hover
+      color: $red
+
+#switcher a
+  -moz-user-select: none
+  -webkit-user-select: none
+  -ms-user-select: none
+  user-select: none
+  text-decoration: none
+  font-family: arial,sans-serif
+  text-align: center
+  font-weight: bold
+  padding: 5px 10px
+  font-size: 16px
+  position: relative
+  border-style: solid
+  border-width: 0px 0px 1px 0px
+
+#switcher
+  display: block
+  width: 100%
+  margin: -20px -10px 0 -10px
+  height: 33px
+
+  a
+    display: inline-block
+    position: absolute
+    margin: 0px
+
+  #invert
+    width: auto
+    left: 0px
+    right: 80px
+
+  #plus, #minus
+    width: 20px
+
+  #plus
+    right: 40px
+
+  #minus
+    right: 0px
+
+@media screen and (min-width:600px)
+  #switcher
+    width: 150px
+    overflow: hidden
+    height: 150px
+    position: absolute
+    top: 0
+    right: 0
+    z-index: 9999
+    margin: 0
+
+    a
+      display: inline
+      position: absolute
+      transform: rotate(45deg)
+      -webkit-transform: rotate(45deg)
+      -ms-transform: rotate(45deg)
+      -moz-transform: rotate(45deg)
+      -o-transform: rotate(45deg)
+      border-width: 1px 0px 1px 0px
+
+    #invert
+      padding: 0px 20px
+      width: 110px
+      top: 32px
+      left: auto
+      right: -32px
+
+    #plus
+      padding: 0px 8px 0px 22px
+      width: 20px
+      top: -4px
+      right: 20px
+
+    #minus
+      padding: 0px 22px 0px 8px
+      width: 20px
+      top: 30px
+      right: -14px
+

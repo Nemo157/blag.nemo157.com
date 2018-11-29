@@ -1,0 +1,35 @@
+@import icons
+@import solarized
+@import utilities
+@import blockquote
+@import switcher
+
+*
+  transition: color 0.5s, background-color 0.5s, background-image 0.5s
+
+body
+  font-family: "Raleway", "HelveticaNeue", "Helvetica Neue", Helvetica, Arial, sans-serif
+  margin: 20px auto
+  max-width: 650px
+  line-height: 1.4
+  font-size: 18px
+  padding: 0 10px
+
+h1,h2,h3
+  font-family: "Lucida Console", Monaco, monospace
+  line-height: 1.2
+
+a.button
+  display: inline-block
+  min-width: 8em
+  margin-bottom: 0.4em
+
+a
+  color: $blue
+  text-decoration: none
+  cursor: pointer
+  &:hover
+    color: lighten($blue, 5%)
+
+pre
+  padding: 15px

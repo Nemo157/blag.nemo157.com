@@ -9,8 +9,13 @@ pub fn block_on<F: Future>(mut future: F) -> F::Output {
 
     impl NoWake {
         fn local_waker() -> LocalWaker {
-            // Safety: all references to NoWake are never dereferenced
-            unsafe { LocalWaker::new(NonNull::<NoWake>::dangling()) }
+            // Safety: all references to NoWake are never
+            // dereferenced
+            unsafe {
+                LocalWaker::new(
+                    NonNull::<NoWake>::dangling(),
+                )
+            }
         }
     }
 
@@ -18,15 +23,17 @@ pub fn block_on<F: Future>(mut future: F) -> F::Output {
         unsafe fn clone_raw(&self) -> Waker {
             NoWake::local_waker().into_waker()
         }
-        unsafe fn drop_raw(&self) { }
-        unsafe fn wake(&self) { }
+        unsafe fn drop_raw(&self) {}
+        unsafe fn wake(&self) {}
     }
 
     let lw = NoWake::local_waker();
     loop {
-        // Safety: `future` is a local variable which is only ever used in this
-        // pinned reference
-        match unsafe { Pin::new_unchecked(&mut future) }.poll(&lw) {
+        // Safety: `future` is a local variable which is
+        // only ever used in this pinned reference
+        match unsafe { Pin::new_unchecked(&mut future) }
+            .poll(&lw)
+        {
             Poll::Ready(value) => break value,
             Poll::Pending => continue,
         }
