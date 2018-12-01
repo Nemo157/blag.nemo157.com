@@ -11,11 +11,7 @@ pub fn block_on<F: Future>(mut future: F) -> F::Output {
         fn local_waker() -> LocalWaker {
             // Safety: all references to NoWake are never
             // dereferenced
-            unsafe {
-                LocalWaker::new(
-                    NonNull::<NoWake>::dangling(),
-                )
-            }
+            unsafe { LocalWaker::new(NonNull::<NoWake>::dangling()) }
         }
     }
 
@@ -31,9 +27,7 @@ pub fn block_on<F: Future>(mut future: F) -> F::Output {
     loop {
         // Safety: `future` is a local variable which is
         // only ever used in this pinned reference
-        match unsafe { Pin::new_unchecked(&mut future) }
-            .poll(&lw)
-        {
+        match unsafe { Pin::new_unchecked(&mut future) }.poll(&lw) {
             Poll::Ready(value) => break value,
             Poll::Pending => continue,
         }

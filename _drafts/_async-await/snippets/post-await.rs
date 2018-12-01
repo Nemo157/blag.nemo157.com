@@ -1,6 +1,4 @@
-pub async fn quote_encrypt_unquote(
-    data: &mut AsyncRead,
-) -> Vec<u8> {
+pub async fn quote_encrypt_unquote(data: &mut AsyncRead) -> Vec<u8> {
     use core::{pin::Pin, task::Poll};
     use std::future::poll_with_tls_waker;
 
@@ -10,9 +8,7 @@ pub async fn quote_encrypt_unquote(
         let mut pinned = data.read_to_end();
         loop {
             if let Poll::Ready(x) =
-                poll_with_tls_waker(unsafe {
-                    Pin::new_unchecked(&mut pinned)
-                })
+                poll_with_tls_waker(unsafe { Pin::new_unchecked(&mut pinned) })
             {
                 break x;
             }
@@ -23,9 +19,7 @@ pub async fn quote_encrypt_unquote(
         let mut pinned = pad.read_to_end();
         loop {
             if let Poll::Ready(x) =
-                poll_with_tls_waker(unsafe {
-                    Pin::new_unchecked(&mut pinned)
-                })
+                poll_with_tls_waker(unsafe { Pin::new_unchecked(&mut pinned) })
             {
                 break x;
             }

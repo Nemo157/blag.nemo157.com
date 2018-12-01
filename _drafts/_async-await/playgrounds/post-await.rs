@@ -63,8 +63,7 @@ pub async fn quote_encrypt_unquote(data: &mut AsyncRead) -> Vec<u8> {
     let data = {
         let mut pinned = data.read_to_end();
         loop {
-            if let Poll::Ready(x) =
-                poll_with_tls_waker(unsafe { Pin::new_unchecked(&mut pinned) })
+            if let Poll::Ready(x) = poll_with_tls_waker(unsafe { Pin::new_unchecked(&mut pinned) })
             {
                 break x;
             }
@@ -74,8 +73,7 @@ pub async fn quote_encrypt_unquote(data: &mut AsyncRead) -> Vec<u8> {
     let pad = {
         let mut pinned = pad.read_to_end();
         loop {
-            if let Poll::Ready(x) =
-                poll_with_tls_waker(unsafe { Pin::new_unchecked(&mut pinned) })
+            if let Poll::Ready(x) = poll_with_tls_waker(unsafe { Pin::new_unchecked(&mut pinned) })
             {
                 break x;
             }

@@ -7,7 +7,7 @@ do
     printf "Testing %-30s…" "$file"
 
     tmp="$(mktemp -d)"
-    output="$(rustc --color=always --edition=2018 -o "$tmp/main" $file 2>&1)"
+    output="$(rustc --color=always --edition=2018 -Dwarnings -o "$tmp/main" $file 2>&1)"
     if [ "$?" != "0" ]
     then
         echo "fail, rustc error:\n$output"

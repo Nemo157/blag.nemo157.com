@@ -10,11 +10,9 @@ pub fn quote_encrypt_unquote(
         let data = {
             let mut pinned = data.read_to_end();
             loop {
-                if let Poll::Ready(x) =
-                    poll_with_tls_waker(unsafe {
-                        Pin::new_unchecked(&mut pinned)
-                    })
-                {
+                if let Poll::Ready(x) = poll_with_tls_waker(unsafe {
+                    Pin::new_unchecked(&mut pinned)
+                }) {
                     break x;
                 }
                 yield
@@ -23,19 +21,14 @@ pub fn quote_encrypt_unquote(
         let pad = {
             let mut pinned = pad.read_to_end();
             loop {
-                if let Poll::Ready(x) =
-                    poll_with_tls_waker(unsafe {
-                        Pin::new_unchecked(&mut pinned)
-                    })
-                {
+                if let Poll::Ready(x) = poll_with_tls_waker(unsafe {
+                    Pin::new_unchecked(&mut pinned)
+                }) {
                     break x;
                 }
                 yield
             }
         };
-        data.into_iter()
-            .zip(pad)
-            .map(|(a, b)| a ^ b)
-            .collect()
+        data.into_iter().zip(pad).map(|(a, b)| a ^ b).collect()
     }
 }
