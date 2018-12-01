@@ -136,3 +136,20 @@ into thread local storage, `poll_with_tls_waker` will then retrieve this to pass
 in to sub-futures that are being `await!`ed on. 
 
 {% include code.md code="generator.rs" %}
+
+## Expanding the generator
+
+Now that we have finished the `async` transform we have the much more
+complicated generator transform to apply. This transform is implemented in
+`rustc`'s MIR layer, so has much less direct equivalence to anything we can
+implement manually in Rust's surface language. I'm going to present a
+manual implementation of a `Generator` that does the same thing as the one from
+the previous snippet, using a sort of similar layout to what `rustc` would
+generate, but since this is all very much unstable internals there's no
+guarantee that `rustc` will continue to generate something similar to this.
+
+Also, rather than attempting to transform piece by piece like the last section
+I'm going to first present the entire transformed generator, then pull out
+pieces to explain from it.
+
+{% include code.md code="manual-generator.rs" %}
