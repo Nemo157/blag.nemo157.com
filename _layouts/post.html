@@ -8,9 +8,9 @@ layout: default
       <small class="u-pull-right">
         [{{ page.date | date: "%Y-%m-%d" }}]
       </small>
-      <span itemprop="name headline">
+      <a itemprop="name headline" href="{{ page.url | relative_url }}">
         {{ page.title | escape }}
-      </span>
+      </a>
     </h1>
   </header>
 
