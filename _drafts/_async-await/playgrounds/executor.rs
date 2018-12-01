@@ -1,4 +1,4 @@
-#![feature(futures_api, pin)]
+#![feature(async_await, futures_api, pin)]
 
 pub mod executor {
     use core::future::Future;
@@ -23,8 +23,8 @@ pub mod executor {
             unsafe fn clone_raw(&self) -> Waker {
                 NoWake::local_waker().into_waker()
             }
-            unsafe fn drop_raw(&self) { }
-            unsafe fn wake(&self) { }
+            unsafe fn drop_raw(&self) {}
+            unsafe fn wake(&self) {}
         }
 
         let lw = NoWake::local_waker();
@@ -37,4 +37,9 @@ pub mod executor {
             }
         }
     }
+}
+
+fn main() {
+    let encrypted = executor::block_on(async { [108, 97, 104, 104, 107] });
+    println!("Encrypted: {}", core::str::from_utf8(&encrypted).unwrap());
 }

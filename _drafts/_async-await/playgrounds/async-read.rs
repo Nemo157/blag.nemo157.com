@@ -15,3 +15,9 @@ pub mod io {
         }
     }
 }
+
+fn main() {
+    // Not enough pieces to give a decent example
+    let encrypted = [108, 97, 104, 104, 107];
+    println!("Encrypted: {}", core::str::from_utf8(&encrypted).unwrap());
+}

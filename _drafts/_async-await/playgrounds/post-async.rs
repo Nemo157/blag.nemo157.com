@@ -35,8 +35,8 @@ pub mod executor {
         unsafe fn clone_raw(&self) -> Waker {
             NoWake::local_waker().into_waker()
         }
-        unsafe fn drop_raw(&self) { }
-        unsafe fn wake(&self) { }
+        unsafe fn drop_raw(&self) {}
+        unsafe fn wake(&self) {}
     }
 
     pub fn block_on<F: Future>(mut future: F) -> F::Output {
@@ -55,16 +55,21 @@ pub mod executor {
 use self::io::AsyncRead;
 use core::future::Future;
 
-pub fn quote_encrypt_unquote(data: &mut AsyncRead) -> impl Future<Output = Vec<u8>> + '_ {
-    use std::future::poll_with_tls_waker;
+pub fn quote_encrypt_unquote(
+    data: &mut AsyncRead,
+) -> impl Future<Output = Vec<u8>> + '_ {
     use core::{pin::Pin, task::Poll};
+    use std::future::poll_with_tls_waker;
 
     async move {
-        let mut pad = AsyncRead::new(vec![4; 32]); // chosen by fair dice roll
+        // one-time-pad chosen by fair dice roll
+        let mut pad = AsyncRead::new(vec![4; 32]);
         let data = {
             let mut pinned = data.read_to_end();
             loop {
-                if let Poll::Ready(x) = poll_with_tls_waker(unsafe { Pin::new_unchecked(&mut pinned) }) {
+                if let Poll::Ready(x) = poll_with_tls_waker(unsafe {
+                    Pin::new_unchecked(&mut pinned)
+                }) {
                     break x;
                 }
                 yield
@@ -73,7 +78,9 @@ pub fn quote_encrypt_unquote(data: &mut AsyncRead) -> impl Future<Output = Vec<u
         let pad = {
             let mut pinned = pad.read_to_end();
             loop {
-                if let Poll::Ready(x) = poll_with_tls_waker(unsafe { Pin::new_unchecked(&mut pinned) }) {
+                if let Poll::Ready(x) = poll_with_tls_waker(unsafe {
+                    Pin::new_unchecked(&mut pinned)
+                }) {
                     break x;
                 }
                 yield
@@ -81,4 +88,10 @@ pub fn quote_encrypt_unquote(data: &mut AsyncRead) -> impl Future<Output = Vec<u
         };
         data.into_iter().zip(pad).map(|(a, b)| a ^ b).collect()
     }
+}
+
+fn main() {
+    let mut data = AsyncRead::new("hello".into());
+    let encrypted = executor::block_on(quote_encrypt_unquote(&mut data));
+    println!("Encrypted: {}", core::str::from_utf8(&encrypted).unwrap());
 }
