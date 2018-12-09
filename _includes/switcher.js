@@ -14,8 +14,13 @@ var clamp = function (val) {
 var shade = storage.getItem('shade') || 'dark'
 var size = clamp(parseInt(storage.getItem('size'), 10)) || 18
 
+document.body.classList.remove('dark')
+document.body.classList.remove('light')
 document.body.classList.add(shade)
 document.body.style.fontSize = size + 'px'
+
+var switcher = document.getElementById('switcher')
+switcher.style.display = ''
 
 window.onInvertClick = function () {
   shade = shade === 'dark' ? 'light' : 'dark'
