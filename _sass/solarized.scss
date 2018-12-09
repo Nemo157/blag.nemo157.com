@@ -29,6 +29,11 @@ $green:     #859900;
   h1, h2, h3, h4, h5, h6 { color: $rebase1; border-color: $rebase0; }
   pre { background: $rebase02; }
   code { color: $rebase1; }
+  .highlight {
+    code { color: $rebase0; }
+    .c { color: $rebase01; }
+    .nv { color: $rebase00; }
+  }
 }
 
 @mixin accentize($accent) {
