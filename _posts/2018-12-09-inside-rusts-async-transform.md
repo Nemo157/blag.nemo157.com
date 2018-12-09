@@ -174,6 +174,10 @@ inside the `from_generator` call in the previous block.
 
 {% include code.md code="manual-generator.rs" %}
 
+(Unfortunately this playground is too large to be opened via URI, you can find
+the fully running example for this [on
+GitHub](https://github.com/Nemo157/blag.nemo157.com/blob/master/_posts/_async-transform/playgrounds/manual-generator.rs).)
+
 ### `ReadToEnd`
 
 ```rust
