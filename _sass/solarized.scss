@@ -31,7 +31,7 @@ $green:     #859900;
   code { color: $rebase1; }
   .highlight {
     code { color: $rebase0; }
-    .c { color: $rebase01; }
+    .c, .cm { color: $rebase01; }
     .nv { color: $rebase00; }
   }
 }
