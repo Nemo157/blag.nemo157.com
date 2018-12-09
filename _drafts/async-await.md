@@ -1,10 +1,30 @@
 ---
 layout: post
-title:  "TODO: Rust Async Await"
+title:  "Inside Rust's Async Transform"
 date:   2018-11-27 23:38:06 +0100
+excerpt_separator: <!--more-->
 ---
 
-TODO: Intro
+As you likely know if you're reading this post Rust has an upcoming async/await
+feature being tested in nightly. Because of Rust's unique features and
+positioning the implementation powering this syntax is very different to other
+well-known implementations (C# and JavaScript's being the ones I am familiar
+with). Instead of performing a [CPS][]-like transform where an async function is
+split into a series of continuations that are chained together via a
+`Future::then` method, Rust instead uses a generator/coroutine transform to turn
+the function into a state machine. For more detail on why Rust is taking this
+approach you should read [eRFC 2033: Experimental Coroutines][eRFC 2033], that
+lays out the why's much better than I could here.
+
+What I'm going to try and provide instead, is a look into how this actually works
+today. What steps the compiler takes to turn an `async fn` into a normal
+function returning a state machine that you _could_ write if you wanted to (but
+you definitely don't).
+
+[CPS]: https://en.wikipedia.org/wiki/Continuation-passing_style "Continuation-passing style"
+[eRFC 2033]: https://github.com/rust-lang/rfcs/blob/master/text/2033-experimental-coroutines.md
+
+<!--more-->
 
 ## The Setup
 
