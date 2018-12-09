@@ -150,6 +150,197 @@ guarantee that `rustc` will continue to generate something similar to this.
 
 Also, rather than attempting to transform piece by piece like the last section
 I'm going to first present the entire transformed generator, then pull out
-pieces to explain from it.
+pieces to explain from it. The following code block simply replaces everything
+inside the `from_generator` call in the previous block.
 
 {% include code.md code="manual-generator.rs" %}
+
+### `ReadToEnd`
+
+```rust
+existential type ReadToEnd<'a>: Future<Output = Vec<u8>> + 'a;
+
+fn read_to_end(read: &mut AsyncRead) -> ReadToEnd<'_> {
+    read.read_to_end()
+}
+```
+
+The very first part of this code block is a little hack to give a name to an
+unnameable type. If you look back at `AsyncRead::read_to_end` you'll see that
+the return type was declared as `impl Future<Output = Vec<u8>> + '_`.
+Unfortunately we cannot easily store this type into the fields of a struct, so
+we have this little hack using the `existential_type` feature to give ourselves
+a name for the type.
+
+### `struct ManualGenerator`
+
+```rust
+struct ManualGenerator<'a> {
+    state: i32,
+    data_1: MaybeUninit<&'a mut AsyncRead>,
+    pad_1: MaybeUninit<AsyncRead>,
+    pinned_1: MaybeUninit<ReadToEnd<'a>>,
+    data_2: MaybeUninit<Vec<u8>>,
+    pinned_2: MaybeUninit<ReadToEnd<'a>>,
+}
+```
+
+Next we have the environment definition for the generator. This includes a
+`state` variable to keep track of which yield point we are currently at, along
+with fields for the upvars that were moved into the environment (`data_1`) and
+the variables that live across yield points (`pad_1`, `pinned_1`, `data_2` and
+`pinned_2`). Note that any variables that are only alive _between_ yield points
+are not stored in the environment, these will be normal variables on the stack
+of the `resume` function (the final `pad` result variable, and the temporaries
+used during polling and the final line).
+
+Each of the fields are stored as `MaybeUninit` as some of them start
+uninitialized and others will be dropped before the generator finishes. You
+might already be able to notice one potential optimization here, `pinned_1` and
+`pinned_2` contain the same type but have non-overlapping lifetimes. To keep
+closer to the real transform I have kept these as separate fields, see
+[rust-lang/rust#52924][] for more details.
+
+[rust-lang/rust#52924]: https://github.com/rust-lang/rust/issues/52924
+
+### State `0`
+
+```rust
+0 => {
+    // one-time-pad chosen by fair dice roll
+    self.pad_1.set(AsyncRead::new(vec![4; 32]));
+    self.pinned_1.set(read_to_end(self.data_1.as_mut()));
+    self.state = 1;
+    self.resume()
+}
+```
+
+Now we get into the meat of the generator. First we have the code running from
+the start of the closure until the beginning of the first `loop`. We don't go
+all the way to the yield point because it is a yield point at the end of a loop,
+we need a state number representing the start of the loop so we can resume there
+after yielding. In the real transform this would end with a `goto` to the start
+of the loop, but it's easier in the Rust surface syntax to just recurse into
+`resume` again (we can't stack overflow as we guarantee moving to a new state
+before recursing and have a limited number of states).
+
+This is a pretty straight-forward transform from the original code, just note
+that we use `MaybeUninit::set` to store the variables into the environment
+instead of `=` and call our hacky `AsyncRead::read_to_end` wrapper so that we
+know the type of the result.
+
+### State `1`
+
+```rust
+1 => {
+    self.data_2.set(loop {
+        if let Poll::Ready(x) = poll_with_tls_waker(
+            Pin::new_unchecked(self.pinned_1.get_mut()),
+        ) {
+            break x;
+        }
+        return GeneratorState::Yielded(());
+    });
+    self.pinned_2.set(read_to_end(self.pad_1.as_mut()));
+    ptr::drop_in_place(self.pinned_1.as_mut_ptr());
+    self.state = 2;
+    self.resume()
+}
+```
+
+State `1` covers the body of the first loop and the small bit of code between it
+and the start of the second loop. Here we can see the same sort of
+straightforward transform as the initial state, with two new things to
+highlight:
+
+ 1. The `yield;` statement is simply replaced with `return
+    GeneratorState::Yielded(());`. Because the yield is at the end of the loop
+    the next statement to execute after resuming is the start of the loop again
+    so this is relatively simple. In a more complicated generator where there is
+    a yield in the middle of a loop you would need to split the body across
+    multiple states and bounce between them until complete.
+
+ 2. The `pinned` variable is dropped at the end of its containing block. We have
+    to use `drop_in_place` here to avoid moving it before dropping, it doesn't
+    matter for this variable but if we were awaiting some `!Unpin` futures here
+    then we would cause unsoundness if they were moved before `Drop::drop` was
+    called.
+
+### State `2`
+
+```rust
+2 => {
+    let pad_2 = loop {
+        if let Poll::Ready(x) = poll_with_tls_waker(
+            Pin::new_unchecked(self.pinned_2.get_mut()),
+        ) {
+            break x;
+        }
+        return GeneratorState::Yielded(());
+    };
+    let result = ptr::read(self.data_2.as_mut_ptr())
+        .into_iter()
+        .zip(pad_2)
+        .map(|(a, b)| a ^ b)
+        .collect();
+    ptr::drop_in_place(self.pinned_2.as_mut_ptr());
+    ptr::drop_in_place(self.pad_1.as_mut_ptr());
+    ptr::drop_in_place(self.data_1.as_mut_ptr());
+    self.state = -1;
+    GeneratorState::Complete(result)
+}
+```
+
+Another straightforward transform for the body of the second loop, final
+statement, and implicit drops of all the closure variables. This is the first
+time we use a variable by value, we have to use `ptr::read` to move the final
+`data` variable out to call `into_iter` on it, since we have passed ownership of
+it off to `Vec::into_iter` we don't drop this variable, but do drop everything
+else remaining alive before returning the final result.
+
+### Error states
+
+```rust
+-1 => panic!("ManualGenerator polled after completion"),
+-2 => panic!("ManualGenerator polled after dropped"),
+_ => panic!("ManualGenerator polled with invalid state"),
+```
+
+We reserve two states for all generators: the generator has completed
+successfully and the generator has been dropped. A generator should never be
+polled after either of these states is reached, and should never be able to get
+into any state we aren't otherwise handling, so we panic if these are reached.
+
+### `Drop`
+
+```rust
+impl<'a> Drop for ManualGenerator<'a> {
+    fn drop(&mut self) {
+        match self.state {
+            0 => {
+                ptr::drop_in_place(self.data_1.as_mut_ptr());
+            }
+            1 => {
+                ptr::drop_in_place(self.pinned_1.as_mut_ptr());
+                ptr::drop_in_place(self.pad_1.as_mut_ptr());
+                ptr::drop_in_place(self.data_1.as_mut_ptr());
+            }
+            2 => {
+                ptr::drop_in_place(self.pinned_2.as_mut_ptr());
+                ptr::drop_in_place(self.data_2.as_mut_ptr());
+                ptr::drop_in_place(self.pad_1.as_mut_ptr());
+                ptr::drop_in_place(self.data_1.as_mut_ptr());
+            }
+            -1 => { /* Everything already dropped in resume */ }
+            -2 => panic!("ManualGenerator dropped twice"),
+            _ => panic!("ManualGenerator dropped with invalid state"),
+        }
+        self.state = -2;
+    }
+}
+```
+
+Since we are using `MaybeUninit` for the fields we also need to implement `Drop`
+for our generator manually, the compiler generated drop glue will not do
+anything. We need to then check what state we are in and drop all the
+variables that are still alive, before finally marking ourselves as dropped.

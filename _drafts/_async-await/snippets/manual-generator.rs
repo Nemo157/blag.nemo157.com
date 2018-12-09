@@ -1,5 +1,9 @@
 existential type ReadToEnd<'a>: Future<Output = Vec<u8>> + 'a;
 
+fn read_to_end(read: &mut AsyncRead) -> ReadToEnd<'_> {
+    read.read_to_end()
+}
+
 struct ManualGenerator<'a> {
     state: i32,
     data_1: MaybeUninit<&'a mut AsyncRead>,
@@ -7,10 +11,6 @@ struct ManualGenerator<'a> {
     pinned_1: MaybeUninit<ReadToEnd<'a>>,
     data_2: MaybeUninit<Vec<u8>>,
     pinned_2: MaybeUninit<ReadToEnd<'a>>,
-}
-
-fn read_to_end(read: &mut AsyncRead) -> ReadToEnd<'_> {
-    read.read_to_end()
 }
 
 impl<'a> Generator for ManualGenerator<'a> {
@@ -22,8 +22,7 @@ impl<'a> Generator for ManualGenerator<'a> {
             0 => {
                 // one-time-pad chosen by fair dice roll
                 self.pad_1.set(AsyncRead::new(vec![4; 32]));
-                self.pinned_1
-                    .set(read_to_end(&mut *self.data_1.as_mut_ptr()));
+                self.pinned_1.set(read_to_end(self.data_1.as_mut()));
                 self.state = 1;
                 self.resume()
             }
@@ -36,11 +35,9 @@ impl<'a> Generator for ManualGenerator<'a> {
                     }
                     return GeneratorState::Yielded(());
                 });
-                self.pinned_2
-                    .set(read_to_end(&mut *self.pad_1.as_mut_ptr()));
-                self.state = 2;
+                self.pinned_2.set(read_to_end(self.pad_1.as_mut()));
                 ptr::drop_in_place(self.pinned_1.as_mut_ptr());
-                ptr::drop_in_place(self.data_1.as_mut_ptr());
+                self.state = 2;
                 self.resume()
             }
             2 => {
@@ -57,13 +54,40 @@ impl<'a> Generator for ManualGenerator<'a> {
                     .zip(pad_2)
                     .map(|(a, b)| a ^ b)
                     .collect();
-                self.state = -1;
                 ptr::drop_in_place(self.pinned_2.as_mut_ptr());
                 ptr::drop_in_place(self.pad_1.as_mut_ptr());
+                ptr::drop_in_place(self.data_1.as_mut_ptr());
+                self.state = -1;
                 GeneratorState::Complete(result)
             }
             -1 => panic!("ManualGenerator polled after completion"),
+            -2 => panic!("ManualGenerator polled after dropped"),
             _ => panic!("ManualGenerator polled with invalid state"),
         }
+    }
+}
+
+impl<'a> Drop for ManualGenerator<'a> {
+    fn drop(&mut self) {
+        match self.state {
+            0 => {
+                ptr::drop_in_place(self.data_1.as_mut_ptr());
+            }
+            1 => {
+                ptr::drop_in_place(self.pinned_1.as_mut_ptr());
+                ptr::drop_in_place(self.pad_1.as_mut_ptr());
+                ptr::drop_in_place(self.data_1.as_mut_ptr());
+            }
+            2 => {
+                ptr::drop_in_place(self.pinned_2.as_mut_ptr());
+                ptr::drop_in_place(self.data_2.as_mut_ptr());
+                ptr::drop_in_place(self.pad_1.as_mut_ptr());
+                ptr::drop_in_place(self.data_1.as_mut_ptr());
+            }
+            -1 => { /* Everything already dropped in resume */ }
+            -2 => panic!("ManualGenerator dropped twice"),
+            _ => panic!("ManualGenerator dropped with invalid state"),
+        }
+        self.state = -2;
     }
 }
