@@ -4,16 +4,23 @@ title:  "Inside Rust's Async Transform"
 excerpt_separator: <!--more-->
 ---
 
+Update: Clarified that C# and JavaScript can be understood as similar to a CPS
+transform, not that they are actually implemented as one.
+
 As you likely know if you're reading this post Rust has an upcoming async/await
 feature being tested in nightly. Because of Rust's unique features and
-positioning the implementation powering this syntax is very different to other
-well-known implementations (C# and JavaScript's being the ones I am familiar
-with). Instead of performing a [CPS][]-like transform where an async function is
-split into a series of continuations that are chained together via a
-`Future::then` method, Rust instead uses a generator/coroutine transform to turn
-the function into a state machine. For more detail on why Rust is taking this
-approach you should read [eRFC 2033: Experimental Coroutines][eRFC 2033], that
-lays out the why's much better than I could here.
+positioning fully understanding the implementation powering this syntax is very
+different to understanding other well-known implementations (C# and JavaScript's
+being the ones I am familiar with). Instead of thinking of a [CPS][]-like
+transform where an async function is split into a series of continuations that
+are chained together via a `Future::then` method, Rust instead uses a
+generator/coroutine transform to turn the function into a state machine (C# and
+probably most JavaScript implementations use a similar transform under the hood,
+but as far as I'm aware because of the garbage collector these are
+indistinguishable from the naive CPS transform they are normally described as).
+For more detail on why Rust is taking this approach you should read [eRFC 2033:
+Experimental Coroutines][eRFC 2033], that lays out the why's much better than I
+could here.
 
 What I'm going to try and provide instead, is a look into how this actually works
 today. What steps the compiler takes to turn an `async fn` into a normal
