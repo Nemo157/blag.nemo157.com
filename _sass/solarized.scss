@@ -48,14 +48,6 @@ $green:     #859900;
   @include rebase($base03, $base02, $base01, $base00, $base0, $base1, $base2, $base3);
 }
 
-.light .invert {
-  @include rebase($base03, $base02, $base01, $base00, $base0, $base1, $base2, $base3);
-}
-
-.dark .invert {
-  @include rebase($base3, $base2, $base1, $base0, $base00, $base01, $base02, $base03);
-}
-
 html * {
   color-profile: sRGB;
   rendering-intent: auto;
