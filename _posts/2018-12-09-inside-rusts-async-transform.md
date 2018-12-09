@@ -130,11 +130,11 @@ here for now. We can expand this macro while still leaving the rest of the
 
 `async fn` does some slightly funky things to the function signature. The main
 thing is just taking the return value (`R`) and wrapping it into `impl
-Future<Output = R>`, then the lifetimes of all arguments are bound into this
-return value (TODO: work out phrase here instead of "bound into"). Currently if
-you have a function taking multiple references you have to give it a single
-named lifetime for all those references to use, but I believe the intention is
-for this to automatically work in the future.
+Future<Output = R>`, then the lifetime of the returned future is bound by the
+lifetimes of all arguments. Currently if you have a function taking multiple
+references you have to give it a single named lifetime for all those references
+to use, but I believe the intention is for this to automatically work in the
+future.
 
 After re-writing the signature the body of the function can be wrapped in
 an `async move { ... }` block to keep everything compiling with the exact same
