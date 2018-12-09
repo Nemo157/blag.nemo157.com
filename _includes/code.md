@@ -1,9 +1,9 @@
 {% capture snippet %}
-{% include_relative _async-await/snippets/{{include.code}} %}
+{% include_relative _async-transform/snippets/{{include.code}} %}
 {% endcapture %}
 
 {% capture playground %}
-{% include_relative _async-await/playgrounds/{{include.code}} %}
+{% include_relative _async-transform/playgrounds/{{include.code}} %}
 {% endcapture %}
 
 ```rust

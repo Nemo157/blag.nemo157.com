@@ -1,7 +1,6 @@
 ---
 layout: post
 title:  "Inside Rust's Async Transform"
-date:   2018-11-27 23:38:06 +0100
 excerpt_separator: <!--more-->
 ---
 
