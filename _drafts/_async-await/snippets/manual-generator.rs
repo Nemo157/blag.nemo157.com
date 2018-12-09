@@ -22,7 +22,8 @@ impl<'a> Generator for ManualGenerator<'a> {
             0 => {
                 // one-time-pad chosen by fair dice roll
                 self.pad_1.set(AsyncRead::new(vec![4; 32]));
-                self.pinned_1.set(read_to_end(self.data_1.as_mut()));
+                self.pinned_1
+                    .set(read_to_end(&mut *self.data_1.as_mut_ptr()));
                 self.state = 1;
                 self.resume()
             }
@@ -35,7 +36,8 @@ impl<'a> Generator for ManualGenerator<'a> {
                     }
                     return GeneratorState::Yielded(());
                 });
-                self.pinned_2.set(read_to_end(self.pad_1.as_mut()));
+                self.pinned_2
+                    .set(read_to_end(&mut *self.pad_1.as_mut_ptr()));
                 ptr::drop_in_place(self.pinned_1.as_mut_ptr());
                 self.state = 2;
                 self.resume()
@@ -70,24 +72,37 @@ impl<'a> Generator for ManualGenerator<'a> {
 impl<'a> Drop for ManualGenerator<'a> {
     fn drop(&mut self) {
         match self.state {
-            0 => {
+            0 => unsafe {
                 ptr::drop_in_place(self.data_1.as_mut_ptr());
-            }
-            1 => {
+            },
+            1 => unsafe {
                 ptr::drop_in_place(self.pinned_1.as_mut_ptr());
                 ptr::drop_in_place(self.pad_1.as_mut_ptr());
                 ptr::drop_in_place(self.data_1.as_mut_ptr());
-            }
-            2 => {
+            },
+            2 => unsafe {
                 ptr::drop_in_place(self.pinned_2.as_mut_ptr());
                 ptr::drop_in_place(self.data_2.as_mut_ptr());
                 ptr::drop_in_place(self.pad_1.as_mut_ptr());
                 ptr::drop_in_place(self.data_1.as_mut_ptr());
-            }
+            },
             -1 => { /* Everything already dropped in resume */ }
             -2 => panic!("ManualGenerator dropped twice"),
             _ => panic!("ManualGenerator dropped with invalid state"),
         }
         self.state = -2;
+    }
+}
+
+impl<'a> ManualGenerator<'a> {
+    fn new(data: &'a mut AsyncRead) -> Self {
+        ManualGenerator {
+            state: 0,
+            data_1: MaybeUninit::new(data),
+            pad_1: MaybeUninit::uninitialized(),
+            pinned_1: MaybeUninit::uninitialized(),
+            data_2: MaybeUninit::uninitialized(),
+            pinned_2: MaybeUninit::uninitialized(),
+        }
     }
 }

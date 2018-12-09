@@ -209,7 +209,8 @@ closer to the real transform I have kept these as separate fields, see
 0 => {
     // one-time-pad chosen by fair dice roll
     self.pad_1.set(AsyncRead::new(vec![4; 32]));
-    self.pinned_1.set(read_to_end(self.data_1.as_mut()));
+    self.pinned_1
+        .set(read_to_end(&mut *self.data_1.as_mut_ptr()));
     self.state = 1;
     self.resume()
 }
@@ -241,7 +242,8 @@ know the type of the result.
         }
         return GeneratorState::Yielded(());
     });
-    self.pinned_2.set(read_to_end(self.pad_1.as_mut()));
+    self.pinned_2
+        .set(read_to_end(&mut *self.pad_1.as_mut_ptr()));
     ptr::drop_in_place(self.pinned_1.as_mut_ptr());
     self.state = 2;
     self.resume()
@@ -317,20 +319,20 @@ into any state we aren't otherwise handling, so we panic if these are reached.
 impl<'a> Drop for ManualGenerator<'a> {
     fn drop(&mut self) {
         match self.state {
-            0 => {
+            0 => unsafe {
                 ptr::drop_in_place(self.data_1.as_mut_ptr());
-            }
-            1 => {
+            },
+            1 => unsafe {
                 ptr::drop_in_place(self.pinned_1.as_mut_ptr());
                 ptr::drop_in_place(self.pad_1.as_mut_ptr());
                 ptr::drop_in_place(self.data_1.as_mut_ptr());
-            }
-            2 => {
+            },
+            2 => unsafe {
                 ptr::drop_in_place(self.pinned_2.as_mut_ptr());
                 ptr::drop_in_place(self.data_2.as_mut_ptr());
                 ptr::drop_in_place(self.pad_1.as_mut_ptr());
                 ptr::drop_in_place(self.data_1.as_mut_ptr());
-            }
+            },
             -1 => { /* Everything already dropped in resume */ }
             -2 => panic!("ManualGenerator dropped twice"),
             _ => panic!("ManualGenerator dropped with invalid state"),
@@ -344,3 +346,24 @@ Since we are using `MaybeUninit` for the fields we also need to implement `Drop`
 for our generator manually, the compiler generated drop glue will not do
 anything. We need to then check what state we are in and drop all the
 variables that are still alive, before finally marking ourselves as dropped.
+
+### `ManualGenerator::new`
+
+```rust
+impl<'a> ManualGenerator<'a> {
+    fn new(data: &'a mut AsyncRead) -> Self {
+        ManualGenerator {
+            state: 0,
+            data_1: MaybeUninit::new(data),
+            pad_1: MaybeUninit::uninitialized(),
+            pinned_1: MaybeUninit::uninitialized(),
+            data_2: MaybeUninit::uninitialized(),
+            pinned_2: MaybeUninit::uninitialized(),
+        }
+    }
+}
+```
+
+Finally we need a way to construct the generator from the upvars, this doesn't
+really get pulled out to a function in the real transform, but it's easier to
+see what's happening if it is here.
