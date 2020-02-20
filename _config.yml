@@ -8,3 +8,8 @@ markdown: kramdown
 
 sass:
   style: compressed
+
+exclude:
+- tools
+- Gemfile
+- Gemfile.lock

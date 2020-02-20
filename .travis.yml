@@ -1,0 +1,36 @@
+language: rust
+
+cache:
+- cargo
+- ruby
+- npm
+
+rust:
+- nightly-2020-01-06
+
+before_script:
+- cargo install cargo-sweep --version 0.4.1
+- cargo sweep --stamp
+
+before_cache:
+- rm -rf "$TRAVIS_HOME/.cargo/registry/src"
+- cargo sweep --file
+
+script:
+- bundle install
+- bundle exec jekyll build
+- cargo run
+    -Zmtime-on-use
+    --manifest-path tools/fix-base-url/Cargo.toml
+    --
+    _site
+
+before_deploy:
+- npm install -g ipfs-deploy
+
+deploy:
+  provider: script
+  skip_cleanup: true
+  script: ipd -OC -p pinata -d cloudflare
+  'on':
+    branch: master

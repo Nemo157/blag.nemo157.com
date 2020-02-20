@@ -8,7 +8,7 @@ layout: default
       <small class="u-pull-right">
         [{{ page.date | date: "%Y-%m-%d" }}]
       </small>
-      <a itemprop="name headline" href="{{ page.url | relative_url }}">
+      <a itemprop="name headline" href="{{ site.url }}{{ page.url }}">
         {{ page.title | escape }}
       </a>
     </h1>
@@ -18,5 +18,5 @@ layout: default
     {{ content }}
   </div>
 
-  <a href="{{ page.url | relative_url }}" hidden></a>
+  <a href="{{ site.url }}{{ page.url }}" hidden></a>
 </article>
