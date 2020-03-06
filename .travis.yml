@@ -1,13 +1,12 @@
 language: rust
 
-node_js: node
-
 script:
 - bundle install
 - bundle exec jekyll build
 - cargo run --manifest-path tools/fix-base-url/Cargo.toml -- _site
 
 before_deploy:
+- nvm use stable
 - npm install -g ipfs-deploy
 
 deploy:
