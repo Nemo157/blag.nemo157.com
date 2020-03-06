@@ -1,8 +1,6 @@
 language: rust
 
-cache:
-- ruby
-- npm
+node_js: node
 
 script:
 - bundle install
